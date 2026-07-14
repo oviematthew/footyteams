@@ -34,7 +34,7 @@ export default function HelpTooltip() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label="How to post a player list"
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-chalk/30 font-mono text-[11px] leading-none text-muted transition hover:border-amber/60 hover:text-amber"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-chalk/30 font-mono text-sm font-semibold leading-none text-muted transition hover:border-amber/60 hover:text-amber"
       >
         ?
       </button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 interface PlayerInputFormProps {
   rawInput: string;
   onRawInputChange: (value: string) => void;
@@ -33,17 +35,52 @@ export default function PlayerInputForm({
   hasResults,
   error,
 }: PlayerInputFormProps) {
+  const [templateCopyLabel, setTemplateCopyLabel] = useState("Copy list template");
+
+  const copyTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(PLACEHOLDER);
+      setTemplateCopyLabel("Copied!");
+    } catch {
+      setTemplateCopyLabel("Couldn't copy");
+    }
+    setTimeout(() => setTemplateCopyLabel("Copy list template"), 1800);
+  };
+
   return (
     <section className="rounded-2xl border border-chalk/10 bg-pitch-800/60 p-5 md:p-6">
-      <label htmlFor="player-list" className="font-display text-sm uppercase tracking-wide text-chalk">
-        Player list
-      </label>
-      <p className="mt-1 text-xs text-muted">
-        One player per line — name, then position (striker / mid / def / any).
-        Numbers, dashes, colons, and commas all work as separators. List two
-        positions with &quot;/&quot;, e.g. &quot;Larry - Def / Mid&quot;. See
-        the <span className="text-chalk">?</span> above for the full guide.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label htmlFor="player-list" className="font-display text-sm uppercase tracking-wide text-chalk">
+          Player list
+        </label>
+        <button
+          type="button"
+          onClick={copyTemplate}
+          className="font-mono text-[11px] uppercase tracking-wide text-muted underline decoration-dotted underline-offset-4 transition hover:text-amber"
+        >
+          {templateCopyLabel}
+        </button>
+      </div>
+
+      <ul className="mt-2 space-y-1.5 text-xs text-muted">
+        <li>
+          <span className="text-chalk">One player per line</span> — number it,
+          then name and position.
+        </li>
+        <li>
+          <span className="text-chalk">Separators:</span> &quot;-&quot;,
+          &quot;:&quot;, or &quot;,&quot; between name and position.
+        </li>
+        <li>
+          <span className="text-chalk">Two positions:</span> join with
+          &quot;/&quot;, e.g. &quot;Larry - Def / Mid&quot;.
+        </li>
+        <li className="text-muted/80">
+          Tap Copy list template above for a ready-made example, or the{" "}
+          <span className="text-chalk">?</span> at the top for the full guide.
+        </li>
+      </ul>
+
       <textarea
         id="player-list"
         value={rawInput}

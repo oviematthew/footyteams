@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Oswald, Inter, IBM_Plex_Mono } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/siteConfig";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const oswald = Oswald({
@@ -75,10 +76,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${oswald.variable} ${inter.variable} ${plexMono.variable}`}>
-      <body className="font-body bg-pitch-950 bg-stripes min-h-screen antialiased">
-        {children}
-      </body>
-    </html>
+    <>
+      <html
+        lang="en"
+        className={`${oswald.variable} ${inter.variable} ${plexMono.variable}`}
+      >
+        <body className="font-body bg-pitch-950 bg-stripes min-h-screen antialiased">
+          {children}
+        </body>
+      </html>
+      <Analytics /> 
+    </>
   );
 }
