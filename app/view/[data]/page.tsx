@@ -12,15 +12,40 @@ interface ViewPageProps {
 const NOINDEX: Metadata["robots"] = { index: false, follow: false };
 
 export function generateMetadata({ params }: ViewPageProps): Metadata {
+  const path = `/view/${params.data}`;
   const teams = decodeTeamsFromUrl(params.data);
+
   if (!teams) {
-    return { title: "Link not found", robots: NOINDEX };
+    return {
+      title: "Link not found",
+      robots: NOINDEX,
+      alternates: { canonical: path },
+      // Reset OG/Twitter to plain app branding rather than inheriting the
+      // homepage's — a broken share link shouldn't preview as the homepage.
+      openGraph: { url: path, title: "Link not found", description: undefined },
+      twitter: { title: "Link not found", description: undefined },
+    };
   }
+
+  // Note: og:image/twitter:image are supplied automatically by the
+  // colocated opengraph-image.tsx file convention for this route segment —
+  // no need to list them here too.
+
   const playerCount = teams.reduce((sum, t) => sum + t.players.length, 0);
+  const title = `${teams.length} teams, ${playerCount} players`;
+  const description = "Matchday lineup, generated with Footy Teams — tap to view.";
+
   return {
-    title: `${teams.length} teams, ${playerCount} players`,
-    description: "Matchday lineup, generated with Footy Teams.",
+    title,
+    description,
     robots: NOINDEX,
+    // Every field below must be set explicitly: Next.js merges unset
+    // metadata fields from the parent layout, so without this the share
+    // link's preview card (image, title, and the URL it links to) would
+    // silently fall back to the generic homepage instead of this lineup.
+    alternates: { canonical: path },
+    openGraph: { url: path, title, description },
+    twitter: { title, description },
   };
 }
 

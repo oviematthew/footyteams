@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Oswald, Inter, IBM_Plex_Mono } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/siteConfig";
 import { Analytics } from "@vercel/analytics/next";
+import SiteFooter from "@/components/SiteFooter";
 import "./globals.css";
 
 const oswald = Oswald({
@@ -83,6 +84,7 @@ export default function RootLayout({
       >
         <body className="font-body bg-pitch-950 bg-stripes min-h-screen antialiased">
           {children}
+          <SiteFooter />
         </body>
       </html>
       <Analytics /> 
