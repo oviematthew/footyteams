@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #0b2e22;
+  color: #f3efe4;
+}
+
+* {
+  scrollbar-color: #1b5a47 #0b2e22;
+}
+
+/* Visible keyboard focus everywhere, regardless of component styling. */
+:focus-visible {
+  outline: 2px solid #ffb100;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Ticket-stub perforation along the top edge of a team card. */
+.ticket-edge {
+  background-image: radial-gradient(
+    circle at 10px 0,
+    transparent 9px,
+    #14493a 9px
+  );
+  background-size: 20px 10px;
+  background-repeat: repeat-x;
+  background-position: top left;
+}
