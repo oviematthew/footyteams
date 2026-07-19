@@ -9,12 +9,22 @@ function shuffle<T>(items: T[]): T[] {
   return arr;
 }
 
+const RATING_CAP_PER_TEAM = 2;
+
 /**
  * Splits players into balanced teams.
  *
  *  - Core rule: whenever a player is assigned, it goes to whichever
- *    team currently has the fewest players (tie broken randomly) —
- *    "best fit" rather than fixed round-robin order.
+ *    eligible team is the "best fit" — least-filled first, then (among
+ *    ties) the team that keeps rating distribution fairest — rather than
+ *    fixed round-robin order.
+ *  - Rating fit: a team should end up with at most 2 players sharing the
+ *    same rating value (1-5), so top (or bottom) performers don't stack
+ *    on one side. This is a soft cap — if honoring it is impossible given
+ *    the pool (e.g. 2 teams, 5 players all rated 5), it relaxes rather
+ *    than blocking placement. Among teams that pass the cap, the one
+ *    with the lowest running rating total wins the tie, keeping overall
+ *    team strength even, not just per-rating counts.
  *  - Baseline pass: every team gets up to 2 strikers, 2 mids, 2 defs
  *    before anything else is dealt. Only single-position players take
  *    part — a player listed with two positions (e.g. "Def / Mid") is
@@ -23,9 +33,9 @@ function shuffle<T>(items: T[]): T[] {
  *    the baseline (e.g. more than 2 * teamCount defenders) get dealt
  *    from that same bucket next, before the flex/fill pools.
  *  - Flex pass: dual-position players are dealt next. Each one goes to
- *    the least-filled team, then is assigned whichever of its own
- *    positions that team currently has fewer of — letting flex players
- *    swing into whatever a team is still short on.
+ *    the best-fit team, then is assigned whichever of its own positions
+ *    that team currently has fewer of — letting flex players swing into
+ *    whatever a team is still short on.
  *  - Fill pass: everything left ("any"/unrecognized players, plus any
  *    surplus that didn't fit) fills remaining slots up to teamSize.
  */
@@ -39,12 +49,34 @@ export function balanceTeams(
     hasExtra: false,
   }));
 
+  // Per-team rating bookkeeping, keyed 1-5 (index 0 unused).
+  const ratingCounts: number[][] = Array.from({ length: teamCount }, () => new Array(6).fill(0));
+  const ratingSums: number[] = new Array(teamCount).fill(0);
+
   const teamsHaveRoom = () => teams.some((t) => t.players.length < teamSize);
 
-  const leastFilledEligible = (eligible: number[]): number => {
-    const minSize = Math.min(...eligible.map((i) => teams[i].players.length));
-    const candidates = eligible.filter((i) => teams[i].players.length === minSize);
+  /** Picks the best-fit team among `eligible`: under the per-rating cap
+   *  where any team can still take it, then least-filled, then lowest
+   *  rating total. Cap is checked across the *whole* eligible set first —
+   *  not just whichever team is currently least-filled — otherwise a team
+   *  that's merely a player behind would keep absorbing same-rated
+   *  players indefinitely with no cap check ever applying to it. */
+  const bestFit = (eligible: number[], rating: number): number => {
+    const underCap = eligible.filter((i) => ratingCounts[i][rating] < RATING_CAP_PER_TEAM);
+    const pool = underCap.length > 0 ? underCap : eligible;
+
+    const minSize = Math.min(...pool.map((i) => teams[i].players.length));
+    const leastFilled = pool.filter((i) => teams[i].players.length === minSize);
+
+    const minSum = Math.min(...leastFilled.map((i) => ratingSums[i]));
+    const candidates = leastFilled.filter((i) => ratingSums[i] === minSum);
     return candidates[Math.floor(Math.random() * candidates.length)];
+  };
+
+  const place = (teamIdx: number, player: AssignedPlayer) => {
+    teams[teamIdx].players.push(player);
+    ratingCounts[teamIdx][player.rating] += 1;
+    ratingSums[teamIdx] += player.rating;
   };
 
   const dealToLeastFilled = (player: AssignedPlayer) => {
@@ -52,7 +84,7 @@ export function balanceTeams(
       .map((_, i) => i)
       .filter((i) => teams[i].players.length < teamSize);
     if (eligible.length === 0) return;
-    teams[leastFilledEligible(eligible)].players.push(player);
+    place(bestFit(eligible, player.rating), player);
   };
 
   const singleBucketOf = (p: Player): PositionBucket | null =>
@@ -81,9 +113,9 @@ export function balanceTeams(
         .filter((i) => dealtCount[i] < 2 && teams[i].players.length < teamSize);
       if (eligible.length === 0) break;
 
-      const idx = leastFilledEligible(eligible);
       const player = bucket.shift()!;
-      teams[idx].players.push({ ...player, assignedBucket: bucketKey });
+      const idx = bestFit(eligible, player.rating);
+      place(idx, { ...player, assignedBucket: bucketKey });
       dealtCount[idx] += 1;
     }
   }
@@ -108,7 +140,7 @@ export function balanceTeams(
       leftoverFlex.push(player);
       continue;
     }
-    const teamIdx = leastFilledEligible(eligible);
+    const teamIdx = bestFit(eligible, player.rating);
     const team = teams[teamIdx];
     const buckets = player.buckets as Exclude<PositionBucket, "any">[];
     const countOf = (b: PositionBucket) =>
@@ -122,7 +154,7 @@ export function balanceTeams(
         chosenCount = c;
       }
     }
-    team.players.push({ ...player, assignedBucket: chosen });
+    place(teamIdx, { ...player, assignedBucket: chosen });
   }
 
   // Fill pass — "any"/unrecognized players plus anything left undealt.

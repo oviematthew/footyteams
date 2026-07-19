@@ -39,11 +39,20 @@ export default function TeamCard({ team, index }: TeamCardProps) {
                   <span className="ml-1.5 text-[11px] text-muted">({player.position})</span>
                 )}
               </span>
-              <span
-                title={isFlex ? player.position : undefined}
-                className={`rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide ${bucketChipClass[player.assignedBucket]}`}
-              >
-                {bucketLabel[player.assignedBucket]}
+              <span className="flex items-center gap-1.5">
+                <span
+                  title={`Rating ${player.rating}/5`}
+                  className="font-mono text-[11px] tracking-wide text-amber"
+                >
+                  {"★".repeat(player.rating)}
+                  <span className="text-chalk/20">{"★".repeat(5 - player.rating)}</span>
+                </span>
+                <span
+                  title={isFlex ? player.position : undefined}
+                  className={`rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide ${bucketChipClass[player.assignedBucket]}`}
+                >
+                  {bucketLabel[player.assignedBucket]}
+                </span>
               </span>
             </li>
           );

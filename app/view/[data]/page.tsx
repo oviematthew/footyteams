@@ -4,14 +4,15 @@ import { decodeTeamsFromUrl } from "@/lib/shareTeams";
 import TeamCard from "@/components/TeamCard";
 
 interface ViewPageProps {
-  params: { data: string };
+  params: Promise<{ data: string }>;
 }
 
 // Shared lineup links are personal/ephemeral, not content worth indexing —
 // keep them out of search results even though the page itself is public.
 const NOINDEX: Metadata["robots"] = { index: false, follow: false };
 
-export function generateMetadata({ params }: ViewPageProps): Metadata {
+export async function generateMetadata(props: ViewPageProps): Promise<Metadata> {
+  const params = await props.params;
   const path = `/view/${params.data}`;
   const teams = decodeTeamsFromUrl(params.data);
 
@@ -49,7 +50,8 @@ export function generateMetadata({ params }: ViewPageProps): Metadata {
   };
 }
 
-export default function ViewPage({ params }: ViewPageProps) {
+export default async function ViewPage(props: ViewPageProps) {
+  const params = await props.params;
   const teams = decodeTeamsFromUrl(params.data);
 
   if (!teams) {

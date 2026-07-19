@@ -15,13 +15,20 @@ interface PlayerInputFormProps {
   error: string | null;
 }
 
-const PLACEHOLDER = `1. Habeeb - Striker
-2. Uti - Mid
-3. Larry - Def / Mid
+const PLACEHOLDER = `1. Habeeb - Striker - 5
+2. Uti - Mid - 3
+3. Larry - Def / Mid - 4
 4. Ada - Attack
-5. Chidi - Mid
+5. Chidi - Mid - 2
 6. Ovie - Defense
-7. Zara - Any`;
+7. Zara - Any
+8. Tunde - Striker - 4
+9. Emeka - Def - 3
+10. Ngozi - Mid - 5
+11. Kunle - Def / Striker - 2
+12. Blessing - Mid
+13. Segun - Def - 4
+14. Amaka - Any - 5`;
 
 export default function PlayerInputForm({
   rawInput,
@@ -62,18 +69,25 @@ export default function PlayerInputForm({
         </button>
       </div>
 
-      <ul className="mt-2 space-y-1.5 text-xs text-muted">
+      <ul className="mt-4 space-y-4 text-sm leading-relaxed text-muted">
         <li>
-          <span className="text-chalk">One player per line</span> — number it,
-          then name and position.
+          <span className="block pb-1 text-chalk">One player per line</span>
+          Number it, then name and position.
         </li>
         <li>
-          <span className="text-chalk">Separators:</span> &quot;-&quot;,
-          &quot;:&quot;, or &quot;,&quot; between name and position.
+          <span className="block pb-1 text-chalk">Separators</span>
+          &quot;-&quot;, &quot;:&quot;, or &quot;,&quot; between name and
+          position.
         </li>
         <li>
-          <span className="text-chalk">Two positions:</span> join with
-          &quot;/&quot;, e.g. &quot;Larry - Def / Mid&quot;.
+          <span className="block pb-1 text-chalk">Two positions</span>
+          Join with &quot;/&quot;, e.g. &quot;Larry - Def / Mid&quot;.
+        </li>
+        <li>
+          <span className="block pb-1 text-chalk">Rating (optional)</span>
+          Add a 1-5 after the position, e.g. &quot;Habeeb - Striker - 5&quot;.
+          The balancer uses it to spread total skill evenly across teams, not
+          just headcount. Left out = average (3).
         </li>
         <li className="text-muted/80">
           Tap Copy list template above for a ready-made example, or the{" "}
@@ -86,7 +100,7 @@ export default function PlayerInputForm({
         value={rawInput}
         onChange={(e) => onRawInputChange(e.target.value)}
         placeholder={PLACEHOLDER}
-        rows={10}
+        rows={16}
         className="mt-3 w-full resize-y rounded-lg border border-chalk/15 bg-pitch-950/60 p-3 font-mono text-sm text-chalk placeholder:text-muted/50 focus:border-amber/60"
       />
 

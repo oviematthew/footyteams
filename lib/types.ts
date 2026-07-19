@@ -10,6 +10,8 @@ export interface Player {
    * player, or `["any"]` when nothing was recognized.
    */
   buckets: PositionBucket[];
+  /** Overall rating, 1 (lowest) to 5 (highest). Defaults to 3 when not specified in the input. */
+  rating: number;
 }
 
 export interface AssignedPlayer extends Player {

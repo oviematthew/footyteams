@@ -4,6 +4,9 @@ const MARKER_RE = /^\s*(?:\d+[.)]|[-•*])\s*/;
 const NUMBERED_RE = /^\s*\d+[.)]/;
 const NAME_POSITION_SEPARATOR_RE = /\s*[-:,]\s*/;
 const POSITION_SPLIT_RE = /\s*(?:\/|&|\+|\band\b)\s*/i;
+const RATING_SEGMENT_RE = /^[1-5]$/;
+
+export const DEFAULT_RATING = 3;
 
 /**
  * Aliases a user might type for each position. Shared with the UI so the
@@ -48,13 +51,23 @@ function parseLine(line: string): Player | null {
   const parts = stripped.split(NAME_POSITION_SEPARATOR_RE);
   if (parts.length < 2 || !parts[0].trim()) {
     const name = stripped.trim();
-    return name ? { name, position: "any", buckets: ["any"] } : null;
+    return name ? { name, position: "any", buckets: ["any"], rating: DEFAULT_RATING } : null;
   }
 
   const name = parts[0].trim();
   if (!name) return null;
-  const rawPosition = parts.slice(1).join(" ").trim() || "any";
-  return { name, position: rawPosition, buckets: resolveBuckets(rawPosition) };
+
+  // A trailing "- Rating" field (1-5) is optional — only treated as a
+  // rating when at least one part is left over for the position, so
+  // "Name - 4" (no position given) isn't mistaken for a rating-only line.
+  const rest = parts.slice(1);
+  const last = rest[rest.length - 1];
+  const hasRating = rest.length >= 2 && RATING_SEGMENT_RE.test(last.trim());
+  const rating = hasRating ? Number(last.trim()) : DEFAULT_RATING;
+  const positionParts = hasRating ? rest.slice(0, -1) : rest;
+
+  const rawPosition = positionParts.join(" ").trim() || "any";
+  return { name, position: rawPosition, buckets: resolveBuckets(rawPosition), rating };
 }
 
 /**
@@ -62,6 +75,8 @@ function parseLine(line: string): Player | null {
  * name/position separator, "/", "&", "+", or "and" between multiple
  * positions, and a leading bullet/number marker. Lines with no
  * recognizable separator are treated as a name with position "any".
+ * An optional trailing "- Rating" field (1-5), e.g. "Larry - Def/Mid - 4",
+ * sets overall rating; omitted ratings default to DEFAULT_RATING.
  *
  * If any numbered line ("1.", "2)") is present, everything before the
  * first one is dropped (e.g. a "Payment list" header), and once the list

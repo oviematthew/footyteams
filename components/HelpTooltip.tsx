@@ -50,6 +50,11 @@ export default function HelpTooltip() {
             <li>Number each line: "1. Name - Position".</li>
             <li>"-", ":", or "," all work between name and position.</li>
             <li>List two positions with "/" — e.g. "Larry - Def / Mid".</li>
+            <li>
+              Add an optional rating (1-5) after the position — e.g. "Habeeb
+              - Striker - 5" — so teams are balanced by skill, not just
+              headcount. Left out, it defaults to 3.
+            </li>
             <li>Anything before the first numbered line (e.g. a header) is ignored.</li>
           </ul>
           <p className="mt-3 font-display text-xs uppercase tracking-wide text-chalk">

@@ -12,7 +12,8 @@ export function formatTeamsAsText(teams: Team[]): string {
     .map((team, i) => {
       const header = `Team ${i + 1}`;
       const lines = team.players.map(
-        (player, j) => `${j + 1}. ${player.name} - ${bucketLabel[player.assignedBucket]}`
+        (player, j) =>
+          `${j + 1}. ${player.name} - ${bucketLabel[player.assignedBucket]} - ${player.rating}`
       );
       return [header, ...lines].join("\n");
     })
@@ -36,13 +37,18 @@ function fromBase64Url(str: string): string {
   return new TextDecoder().decode(bytes);
 }
 
-type EncodedPlayer = [name: string, position: string, assignedBucket: PositionBucket];
+type EncodedPlayer = [
+  name: string,
+  position: string,
+  assignedBucket: PositionBucket,
+  rating: number
+];
 type EncodedTeams = EncodedPlayer[][];
 
 /** Serializes teams into a compact, URL-safe token — the URL *is* the data, no storage needed. */
 export function encodeTeamsForUrl(teams: Team[]): string {
   const encoded: EncodedTeams = teams.map((team) =>
-    team.players.map((p) => [p.name, p.position, p.assignedBucket])
+    team.players.map((p) => [p.name, p.position, p.assignedBucket, p.rating])
   );
   return toBase64Url(JSON.stringify(encoded));
 }
@@ -58,16 +64,19 @@ export function decodeTeamsFromUrl(token: string): Team[] | null {
       const players: AssignedPlayer[] = rawTeam.map((rawPlayer) => {
         if (
           !Array.isArray(rawPlayer) ||
-          rawPlayer.length !== 3 ||
+          (rawPlayer.length !== 3 && rawPlayer.length !== 4) ||
           typeof rawPlayer[0] !== "string" ||
           typeof rawPlayer[1] !== "string" ||
           !VALID_BUCKETS.includes(rawPlayer[2])
         ) {
           throw new Error("invalid player");
         }
-        const [name, position, assignedBucket] = rawPlayer as EncodedPlayer;
+        const [name, position, assignedBucket, rawRating] = rawPlayer as EncodedPlayer;
         if (!name.trim()) throw new Error("invalid player name");
-        return { name, position, buckets: [assignedBucket], assignedBucket };
+        // Older share links (pre-rating) only have 3 fields — default to 3.
+        const rating =
+          typeof rawRating === "number" && rawRating >= 1 && rawRating <= 5 ? rawRating : 3;
+        return { name, position, buckets: [assignedBucket], assignedBucket, rating };
       });
       return { players, hasExtra: false };
     });
