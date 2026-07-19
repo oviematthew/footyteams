@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { decodeTeamsFromUrl } from "@/lib/shareTeams";
-import TeamCard from "@/components/TeamCard";
+import TeamResults from "@/components/TeamResults";
 
 interface ViewPageProps {
   params: Promise<{ data: string }>;
@@ -94,11 +94,7 @@ export default async function ViewPage(props: ViewPageProps) {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        {teams.map((team, i) => (
-          <TeamCard key={i} team={team} index={i} />
-        ))}
-      </section>
+      <TeamResults teams={teams} />
     </main>
   );
 }
