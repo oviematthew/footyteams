@@ -1,20 +1,16 @@
-import { bucketLabel } from "./positionStyles";
 import type { AssignedPlayer, PositionBucket, Team } from "./types";
 
 const VALID_BUCKETS: PositionBucket[] = ["striker", "mid", "def", "any"];
 
 /**
- * Flat "Name - Position" list per team, matching the WhatsApp-bot output
- * convention this app is modeled on — ready to paste straight into a chat.
+ * Flat name-only list per team — no position or rating — ready to paste
+ * straight into a group chat.
  */
 export function formatTeamsAsText(teams: Team[]): string {
   return teams
     .map((team, i) => {
       const header = `Team ${i + 1}`;
-      const lines = team.players.map(
-        (player, j) =>
-          `${j + 1}. ${player.name} - ${bucketLabel[player.assignedBucket]} - ${player.rating}`
-      );
+      const lines = team.players.map((player, j) => `${j + 1}. ${player.name}`);
       return [header, ...lines].join("\n");
     })
     .join("\n\n");

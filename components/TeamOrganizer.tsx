@@ -15,6 +15,15 @@ export default function TeamOrganizer() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [lastPlayers, setLastPlayers] = useState<Player[]>([]);
   const [lastResolved, setLastResolved] = useState<{ teamSize: number; teamCount: number } | null>(null);
+  // The exact inputs the current `teams` were built from — lets Generate
+  // tell "nothing changed, don't bother reshuffling" apart from "the list
+  // or settings actually changed, build fresh." Reshuffle bypasses this
+  // and always re-balances the same last-used players.
+  const [lastGeneratedFrom, setLastGeneratedFrom] = useState<{
+    rawInput: string;
+    teamSize: string;
+    teamCount: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const runBalance = (players: Player[], resolved: { teamSize: number; teamCount: number }) => {
@@ -22,6 +31,19 @@ export default function TeamOrganizer() {
   };
 
   const handleGenerate = () => {
+    if (
+      teams.length > 0 &&
+      lastGeneratedFrom &&
+      lastGeneratedFrom.rawInput === rawInput &&
+      lastGeneratedFrom.teamSize === teamSize &&
+      lastGeneratedFrom.teamCount === teamCount
+    ) {
+      // Same list, same settings, teams already on screen — re-running the
+      // balancer here would just be an unlabeled reshuffle. Use the
+      // Reshuffle button for that instead.
+      return;
+    }
+
     const players = parsePlayers(rawInput);
 
     if (players.length === 0) {
@@ -43,6 +65,7 @@ export default function TeamOrganizer() {
     setError(null);
     setLastPlayers(players);
     setLastResolved(resolved);
+    setLastGeneratedFrom({ rawInput, teamSize, teamCount });
     runBalance(players, resolved);
   };
 

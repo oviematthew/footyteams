@@ -85,9 +85,35 @@ balancing are resolved together, not as separate stages.
 2. **Surplus pass** — extra single-position players left in a bucket
    after the baseline (e.g. more than 2 × team count defenders) are
    dealt from that same bucket next, before the flex/fill pools.
-3. **Flex pass** — dual/multi-position players are dealt next. Each
-   one lands on its best-fit team, then is assigned whichever of its
-   own positions that team currently has fewer of.
+3. **Flex pass** — dual/multi-position players are dealt next. Team
+   and position are chosen *together*: every (eligible team, own
+   position) pairing is scored by how many players that team already
+   has in that position, and the pairing with the smallest count wins
+   — `bestFit` (rating cap → size → rating sum) only breaks ties among
+   those. This is deliberately not "pick the best-fit team, then see
+   which position it needs" — that order would pick a team by size/
+   rating alone and could hand a flex player to a team that's already
+   fine on both of the player's positions, while the *other* team is
+   the one actually short. E.g. a "Def / Striker" player, with one
+   team down to 1 striker and the other already at 2, should land on
+   the short team as a striker — scoring (team, position) jointly is
+   what guarantees that instead of leaving it to chance.
+
+   Flex players are processed one at a time (not all scored up front),
+   because each placement changes the counts the next one scores
+   against. When a single player's own shortest-fit options still tie
+   *across two different positions* (e.g. team A is tied-short on
+   striker and team B is tied-short on def — two unrelated gaps, not
+   two teams needing the same thing), that tie is **not** left to
+   `bestFit`. Instead it's broken by rarity: whichever position fewer
+   of the *other still-unprocessed* flex players could also cover
+   wins. A gap only one player can fill must be filled by that player;
+   a gap several players could equally fill can wait. Without this, a
+   player facing that kind of tie could burn its unique capability on
+   the gap another flex player would have covered anyway, leaving the
+   gap only it could fix unfixed — reproducible by reshuffling the
+   same list repeatedly and watching a flex player land on the
+   "wrong" side of an otherwise-fixable imbalance.
 4. **Fill pass** — everything left (`any`/unrecognized players, plus
    any surplus that didn't fit) fills remaining slots up to team size.
 

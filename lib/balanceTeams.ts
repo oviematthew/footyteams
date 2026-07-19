@@ -32,10 +32,18 @@ const RATING_CAP_PER_TEAM = 2;
  *  - Surplus pass: extra single-position players left in a bucket after
  *    the baseline (e.g. more than 2 * teamCount defenders) get dealt
  *    from that same bucket next, before the flex/fill pools.
- *  - Flex pass: dual-position players are dealt next. Each one goes to
- *    the best-fit team, then is assigned whichever of its own positions
- *    that team currently has fewer of — letting flex players swing into
- *    whatever a team is still short on.
+ *  - Flex pass: dual-position players are dealt next, one at a time.
+ *    Team and position are chosen together — whichever (team,
+ *    own-position) pairing is currently the shortest wins first,
+ *    best-fit (size/rating) only breaks ties among those — so a flex
+ *    player actually patches whichever team/position combo needs it
+ *    most, rather than being routed to a team by size alone and only
+ *    then handed its least-crowded position on that team. When a
+ *    player's own shortest fit ties across two different positions
+ *    (two unrelated gaps, not two teams wanting the same thing), the
+ *    tie goes to whichever position fewer of the still-unprocessed
+ *    flex players could also cover — a gap only this player can fill
+ *    must be filled by it; a gap others could equally fill can wait.
  *  - Fill pass: everything left ("any"/unrecognized players, plus any
  *    surplus that didn't fit) fills remaining slots up to teamSize.
  */
@@ -129,10 +137,17 @@ export function balanceTeams(
     }
   }
 
-  // Flex pass — dual/multi-position players swing into whichever of their
-  // own positions the team they land on currently has fewer of.
+  // Flex pass — dual/multi-position players patch whichever team/position
+  // combo is shortest, team and bucket chosen together. Picking the team
+  // first (by size/rating alone, blind to position) and only then asking
+  // "which of my positions is this team short on" misses the whole point
+  // of a flex player: a "Def / Striker" sitting on a team that's already
+  // fine for strikers should swing to the OTHER team if that one is the
+  // one actually short a striker, not settle for "def" locally.
   const leftoverFlex: Player[] = [];
-  for (const player of flexPlayers) {
+  const pendingFlex = [...flexPlayers];
+  while (pendingFlex.length > 0) {
+    const player = pendingFlex.shift()!;
     const eligible = teams
       .map((_, i) => i)
       .filter((i) => teams[i].players.length < teamSize);
@@ -140,20 +155,33 @@ export function balanceTeams(
       leftoverFlex.push(player);
       continue;
     }
-    const teamIdx = bestFit(eligible, player.rating);
-    const team = teams[teamIdx];
     const buckets = player.buckets as Exclude<PositionBucket, "any">[];
-    const countOf = (b: PositionBucket) =>
-      team.players.filter((p) => p.assignedBucket === b).length;
-    let chosen = buckets[0];
-    let chosenCount = countOf(chosen);
-    for (const b of buckets.slice(1)) {
-      const c = countOf(b);
-      if (c < chosenCount) {
-        chosen = b;
-        chosenCount = c;
-      }
+    const countOf = (teamIdx: number, b: PositionBucket) =>
+      teams[teamIdx].players.filter((p) => p.assignedBucket === b).length;
+
+    const options = eligible.flatMap((i) => buckets.map((b) => ({ i, b, count: countOf(i, b) })));
+    const minCount = Math.min(...options.map((o) => o.count));
+    let shortestFit = options.filter((o) => o.count === minCount);
+
+    // If this player's shortest fit spans more than one of their own
+    // positions (e.g. team A is tied-short on striker and team B is
+    // tied-short on def), don't leave the pick to rating/size alone —
+    // that's a coin flip between two unrelated fixes. Prefer whichever
+    // position fewer of the *other* still-waiting flex players could also
+    // cover, so a gap only this player can fill doesn't lose out to one
+    // someone else could just as easily close afterward.
+    const distinctBuckets = [...new Set(shortestFit.map((o) => o.b))];
+    if (distinctBuckets.length > 1) {
+      const rarity = (b: PositionBucket) =>
+        pendingFlex.filter((p) => (p.buckets as PositionBucket[]).includes(b)).length;
+      const minRarity = Math.min(...distinctBuckets.map(rarity));
+      const rarestBuckets = distinctBuckets.filter((b) => rarity(b) === minRarity);
+      shortestFit = shortestFit.filter((o) => rarestBuckets.includes(o.b));
     }
+
+    const candidateTeams = [...new Set(shortestFit.map((o) => o.i))];
+    const teamIdx = bestFit(candidateTeams, player.rating);
+    const chosen = shortestFit.find((o) => o.i === teamIdx)!.b;
     place(teamIdx, { ...player, assignedBucket: chosen });
   }
 
